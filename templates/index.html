@@ -88,12 +88,36 @@
         <!-- Loading State -->
         <div id="loadingState" class="hidden max-w-2xl mx-auto">
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <div class="flex items-center justify-center space-x-4">
-                    <div class="loading w-4 h-4 bg-blue-600 rounded-full"></div>
-                    <div class="loading w-4 h-4 bg-blue-600 rounded-full" style="animation-delay: 0.2s"></div>
-                    <div class="loading w-4 h-4 bg-blue-600 rounded-full" style="animation-delay: 0.4s"></div>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Research Progress</h2>
+                    <div class="flex items-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <span class="text-sm text-gray-600">In Progress</span>
+                    </div>
                 </div>
-                <p class="text-center text-gray-600 mt-4">Researching your topic...</p>
+                
+                <!-- Progress Steps -->
+                <div class="space-y-4" id="progressSteps">
+                    <!-- Steps will be added here -->
+                </div>
+            </div>
+            
+            <!-- Progress Step Template -->
+            <template id="progressStepTemplate">
+                <div class="flex items-center space-x-3 text-gray-600">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm font-medium step-message"></p>
+                        <p class="text-xs text-gray-500 step-details"></p>
+                    </div>
+                    <div class="flex-shrink-0 text-xs text-gray-400 step-time"></div>
+                </div>
+            </template>
+
             </div>
         </div>
 
@@ -193,6 +217,48 @@
     </div>
 
     <script>
+        function formatTimestamp(timestamp) {
+            return new Date(timestamp * 1000).toLocaleTimeString();
+        }
+        
+        function addProgressStep(log) {
+            const template = document.getElementById('progressStepTemplate');
+            const container = document.getElementById('progressSteps');
+            const clone = template.content.cloneNode(true);
+            
+            // Set step message
+            const stepMessage = clone.querySelector('.step-message');
+            const stepDetails = clone.querySelector('.step-details');
+            const stepTime = clone.querySelector('.step-time');
+            
+            // Format message based on step type
+            switch(log.step) {
+                case 'search_started':
+                    stepMessage.textContent = 'Starting search';
+                    stepDetails.textContent = `Topic: ${log.details.topic}`;
+                    break;
+                case 'search_completed':
+                    stepMessage.textContent = 'Search completed';
+                    stepDetails.textContent = `Found ${log.details.num_results} relevant sources`;
+                    break;
+                case 'prompt_generated':
+                    stepMessage.textContent = 'Generated research prompt';
+                    break;
+                case 'research_started':
+                    stepMessage.textContent = 'Started research synthesis';
+                    stepDetails.textContent = `Using ${log.details.model} model`;
+                    break;
+                case 'research_completed':
+                    stepMessage.textContent = 'Research completed';
+                    break;
+                default:
+                    stepMessage.textContent = log.step;
+            }
+            
+            stepTime.textContent = formatTimestamp(log.timestamp);
+            container.appendChild(clone);
+        }
+        
         function formatResearchContent(content, sources) {
             if (!content) return '';
             
@@ -244,6 +310,18 @@
                 const data = await response.json();
                 
                 if (response.ok) {
+                    // Start listening for progress updates
+                    const eventSource = new EventSource(`/stream/${data.session_id}`);
+                    
+                    eventSource.onmessage = function(event) {
+                        const log = JSON.parse(event.data);
+                        addProgressStep(log);
+                    };
+                    
+                    // Close the event source when research is complete
+                    setTimeout(() => {
+                        eventSource.close();
+                    }, data.duration * 1000 + 1000); // Add 1 second buffer
                     // Hide loading state
                     document.getElementById('loadingState').classList.add('hidden');
                     

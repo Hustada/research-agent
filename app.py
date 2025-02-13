@@ -1,9 +1,13 @@
 import os
 import re
+import json
+import time
 import logging
+import uuid
 from typing import Dict, Any
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
+from services.logging import research_logger
 from services.models import ModelFactory
 from services.research.chains import ResearchChainManager
 from services.search.search_manager import SearchManager
@@ -139,25 +143,37 @@ def research():
         search_provider = SerpSearchProvider(api_key=SERPAPI_API_KEY)
         search_manager = SearchManager(search_provider=search_provider)
         
+        # Create session ID for logging
+        session_id = str(uuid.uuid4())
+        research_logger.create_session(session_id)
+        
+        # Log start of search
+        research_logger.log_step(session_id, "search_started", {"topic": topic})
+        
         # Get search results
         search_results = search_manager.search(topic, num_results=4)
+        research_logger.log_step(session_id, "search_completed", {"num_results": len(search_results)})
         
         # Get research prompt
         research_prompt = RESEARCH_PROMPTS[depth](topic)
+        research_logger.log_step(session_id, "prompt_generated")
         
         # Process research
+        research_logger.log_step(session_id, "research_started", {"model": model_provider})
         research_output = research_manager.process_research(
             query=topic,
             prompt=research_prompt,
             sources=search_results,
             depth=depth
         )
+        research_logger.log_step(session_id, "research_completed")
         
         # Format response
         response = {
             'result': research_output['result'],
             'duration': research_output['duration'],
             'depth': research_output['depth'],
+            'session_id': session_id,
             'sources': [
                 {
                     'title': s.title,
@@ -178,6 +194,23 @@ def research():
             'error': 'An unexpected error occurred during research. Please try again.',
             'details': str(e)
         }), 500
+
+@app.route('/stream/<session_id>')
+def stream(session_id):
+    """Stream research progress using Server-Sent Events."""
+    def generate():
+        while True:
+            # Get any new logs
+            logs = research_logger.get_logs(session_id)
+            
+            # Send each log as an event
+            for log in logs:
+                yield f"data: {json.dumps(log)}\n\n"
+            
+            # Small delay to prevent excessive CPU usage
+            time.sleep(0.1)
+    
+    return Response(generate(), mimetype='text/event-stream')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5004)
