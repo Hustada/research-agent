@@ -107,7 +107,7 @@ def research():
         search_manager = SearchManager(search_provider=search_provider)
         
         # Get search results
-        search_results = search_manager.search(topic)
+        search_results = search_manager.search(topic, num_results=4)
         
         # Get research prompt
         research_prompt = RESEARCH_PROMPTS[depth](topic)

@@ -82,16 +82,93 @@
 
         <!-- Results -->
         <div id="results" class="hidden max-w-4xl mx-auto">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <div class="prose max-w-none" id="researchContent">
+            <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+                <!-- Research Header -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                    <h2 class="text-2xl font-semibold text-gray-800">Research Summary</h2>
+                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span id="researchTime"></span>s
+                    </div>
+                </div>
+                
+                <!-- Research Content -->
+                <div class="prose prose-lg max-w-none" id="researchContent">
                     <!-- Research content will be inserted here -->
                 </div>
+                
+                <!-- Content Style Overrides -->
+                <style>
+                    .prose p {
+                        margin-top: 1.25em;
+                        margin-bottom: 1.25em;
+                        line-height: 1.8;
+                        color: #374151;
+                    }
+                    .prose a {
+                        text-decoration: none;
+                        font-weight: 500;
+                        padding: 0.125rem 0.25rem;
+                        margin: -0.125rem -0.25rem;
+                        border-radius: 0.25rem;
+                        transition: background-color 0.15s;
+                    }
+                    .prose a:hover {
+                        background-color: #EFF6FF;
+                    }
+                    .prose ul {
+                        margin-top: 1.5em;
+                        margin-bottom: 1.5em;
+                        padding-left: 1.625em;
+                    }
+                    .prose li {
+                        margin-top: 0.5em;
+                        margin-bottom: 0.5em;
+                        padding-left: 0.375em;
+                    }
+                    .prose strong {
+                        color: #1F2937;
+                        font-weight: 600;
+                    }
+                    .prose h1, .prose h2, .prose h3, .prose h4 {
+                        color: #1F2937;
+                        font-weight: 600;
+                        margin-top: 2em;
+                        margin-bottom: 1em;
+                        padding-bottom: 0.5em;
+                        border-bottom: 2px solid #E5E7EB;
+                    }
+                    .prose h2 {
+                        font-size: 1.5em;
+                        color: #2563EB;
+                        letter-spacing: -0.025em;
+                    }
+                    .prose h3 {
+                        font-size: 1.25em;
+                        color: #1F2937;
+                    }
+                    .prose blockquote {
+                        font-style: italic;
+                        border-left-color: #3B82F6;
+                        border-left-width: 0.25rem;
+                        margin: 1.5em 0;
+                        padding-left: 1em;
+                        color: #4B5563;
+                    }
+                </style>
             </div>
 
             <!-- Sources -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Sources</h3>
-                <div id="sources" class="space-y-4">
+            <div class="bg-white rounded-lg shadow-md p-8" id="sources-section">
+                <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-gray-100">
+                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800">Research Sources</h3>
+                </div>
+                <div id="sources" class="space-y-6 divide-y divide-gray-100">
                     <!-- Sources will be inserted here -->
                 </div>
             </div>
@@ -99,6 +176,34 @@
     </div>
 
     <script>
+        function formatResearchContent(content, sources) {
+            if (!content) return '';
+            
+            // Safely escape any HTML in the content
+            let formattedContent = content.replace(/[&<>"']/g, function(m) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return map[m];
+            });
+            
+            // Replace [Source X] with linked citations
+            sources.forEach((source, index) => {
+                const sourceRef = `[Source ${index + 1}]`;
+                const sourceLink = `<a href="#source-${index + 1}" class="text-blue-600 hover:text-blue-800 no-underline">[${index + 1}]</a>`;
+                // Use string replacement instead of regex to prevent recursion
+                while (formattedContent.includes(sourceRef)) {
+                    formattedContent = formattedContent.replace(sourceRef, sourceLink);
+                }
+            });
+            
+            return formattedContent;
+        }
+
         document.getElementById('researchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -127,19 +232,57 @@
                     // Show results
                     document.getElementById('results').classList.remove('hidden');
                     
-                    // Update research content with markdown formatting
-                    document.getElementById('researchContent').innerHTML = marked.parse(data.result);
+                    // Format research content with linked citations
+                    const formattedContent = formatResearchContent(data.result, data.sources);
                     
-                    // Update sources
-                    const sourcesHtml = data.sources.map(source => `
-                        <div class="border-l-4 border-blue-500 pl-4">
-                            <h4 class="font-medium text-gray-900">${source.title}</h4>
-                            <p class="text-sm text-gray-600 mt-1">${source.snippet}</p>
-                            <a href="${source.url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-block">Read More →</a>
+                    // Configure marked to prevent excessive recursion
+                    marked.setOptions({
+                        headerIds: false,
+                        mangle: false
+                    });
+                    
+                    try {
+                        const parsedContent = marked.parse(formattedContent);
+                        document.getElementById('researchContent').innerHTML = parsedContent;
+                    } catch (parseError) {
+                        console.error('Markdown parsing error:', parseError);
+                        // Fallback to basic formatting if markdown parsing fails
+                        document.getElementById('researchContent').innerHTML = 
+                            `<p>${formattedContent.replace(/\n/g, '<br>')}</p>`;
+                    }
+                    
+                    // Update research time
+                    document.getElementById('researchTime').textContent = data.duration.toFixed(2);
+                    
+                    // Update sources with IDs for linking
+                    const sourcesHtml = data.sources.map((source, index) => `
+                        <div id="source-${index + 1}" class="py-4 first:pt-0 last:pb-0">
+                            <div class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-semibold flex items-center justify-center text-sm">${index + 1}</span>
+                                <div class="ml-4 flex-1">
+                                    <h4 class="font-medium text-gray-900 mb-1">${source.title}</h4>
+                                    <p class="text-sm text-gray-600 mb-2">${source.snippet}</p>
+                                    <a href="${source.url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center group">
+                                        Read More
+                                        <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     `).join('');
                     
                     document.getElementById('sources').innerHTML = sourcesHtml;
+
+                    // Smooth scroll to cited source when clicking citation
+                    document.querySelectorAll('#researchContent a[href^="#source-"]').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const targetId = link.getAttribute('href').slice(1);
+                            document.getElementById(targetId).scrollIntoView({ behavior: 'smooth' });
+                        });
+                    });
                 } else {
                     throw new Error(data.error || 'An error occurred');
                 }

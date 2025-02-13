@@ -13,7 +13,10 @@ A sleek, minimalist web application that uses AI to generate research summaries 
   - Multiple research depth levels (brief, detailed, comprehensive)
   - Web search integration with source tracking
   - Conversational AI agent with memory
-  - Structured output with citations
+  - Structured output with interactive citations
+  - Modern UI with Tailwind CSS
+  - Clean typography and visual hierarchy
+  - Responsive design for all devices
 
 ## Enhancement Roadmap
 
