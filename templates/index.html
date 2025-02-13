@@ -5,121 +5,147 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'accent': '#3498db',  // Vibrant blue for highlights
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://unpkg.com/marked@11.1.0/marked.min.js"></script>
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="w-full max-w-2xl bg-[#1E1E1E] rounded-xl shadow-2xl p-8">
-        <h1 class="text-3xl font-bold mb-6 text-center text-white">Research Agent</h1>
-        
-        <div class="mb-4">
-            <label for="topic" class="block text-sm font-medium text-gray-300 mb-2">Research Topic</label>
-            <input 
-                type="text" 
-                id="topic" 
-                class="w-full px-3 py-2 bg-[#2C2C2C] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-accent"
-                placeholder="Enter research topic..."
-            >
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Research Agent</h1>
+            <p class="text-gray-600">AI-powered research assistant</p>
+        </header>
+
+        <!-- Research Form -->
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="researchForm" class="space-y-6">
+                <div>
+                    <label for="topic" class="block text-sm font-medium text-gray-700 mb-1">Research Topic</label>
+                    <input type="text" id="topic" name="topic" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter your research topic...">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Research Depth</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="depth" value="brief" class="peer sr-only" checked>
+                            <div class="w-full p-4 text-gray-600 bg-white border border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:text-blue-600 peer-checked:bg-blue-50 hover:bg-gray-50">
+                                <div class="text-sm font-semibold">Brief</div>
+                                <div class="text-xs">Quick overview</div>
+                            </div>
+                        </label>
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="depth" value="detailed" class="peer sr-only">
+                            <div class="w-full p-4 text-gray-600 bg-white border border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:text-blue-600 peer-checked:bg-blue-50 hover:bg-gray-50">
+                                <div class="text-sm font-semibold">Detailed</div>
+                                <div class="text-xs">Full analysis</div>
+                            </div>
+                        </label>
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="depth" value="comprehensive" class="peer sr-only">
+                            <div class="w-full p-4 text-gray-600 bg-white border border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:text-blue-600 peer-checked:bg-blue-50 hover:bg-gray-50">
+                                <div class="text-sm font-semibold">Comprehensive</div>
+                                <div class="text-xs">Deep research</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                    Start Research
+                </button>
+            </form>
         </div>
 
-        <div class="mb-4">
-            <label for="provider" class="block text-sm font-medium text-gray-300 mb-2">AI Provider</label>
-            <select 
-                id="provider" 
-                class="w-full px-3 py-2 bg-[#2C2C2C] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-                {% for provider in providers %}
-                <option value="{{ provider }}">{{ provider.capitalize() }}</option>
-                {% endfor %}
-            </select>
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex items-center justify-center space-x-4">
+                    <div class="loading w-4 h-4 bg-blue-600 rounded-full"></div>
+                    <div class="loading w-4 h-4 bg-blue-600 rounded-full" style="animation-delay: 0.2s"></div>
+                    <div class="loading w-4 h-4 bg-blue-600 rounded-full" style="animation-delay: 0.4s"></div>
+                </div>
+                <p class="text-center text-gray-600 mt-4">Researching your topic...</p>
+            </div>
         </div>
 
-        <div class="mb-4">
-            <label for="depth" class="block text-sm font-medium text-gray-300 mb-2">Research Depth</label>
-            <select 
-                id="depth" 
-                class="w-full px-3 py-2 bg-[#2C2C2C] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-                <option value="brief">Brief Overview</option>
-                <option value="detailed">Detailed Research</option>
-                <option value="comprehensive">Comprehensive Analysis</option>
-            </select>
-        </div>
+        <!-- Results -->
+        <div id="results" class="hidden max-w-4xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="prose max-w-none" id="researchContent">
+                    <!-- Research content will be inserted here -->
+                </div>
+            </div>
 
-        <button 
-            id="research-btn"
-            class="w-full py-3 bg-accent text-white rounded-md hover:bg-blue-600 transition duration-300 ease-in-out"
-        >
-            Start Research
-        </button>
-
-        <div 
-            id="loading" 
-            class="hidden mt-4 text-center text-gray-400"
-        >
-            Researching... Please wait
-        </div>
-
-        <div 
-            id="results" 
-            class="mt-6 p-4 bg-[#2C2C2C] rounded-md max-h-96 overflow-y-auto"
-        >
-            <!-- Research results will appear here -->
+            <!-- Sources -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Sources</h3>
+                <div id="sources" class="space-y-4">
+                    <!-- Sources will be inserted here -->
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('research-btn').addEventListener('click', async () => {
+        document.getElementById('researchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
             const topic = document.getElementById('topic').value;
-            const provider = document.getElementById('provider').value;
-            const depth = document.getElementById('depth').value;
-            const loadingIndicator = document.getElementById('loading');
-            const resultsContainer = document.getElementById('results');
-
-            if (!topic) {
-                alert('Please enter a research topic');
-                return;
-            }
-
-            // Clear previous results
-            resultsContainer.innerHTML = '';
-            loadingIndicator.classList.remove('hidden');
-
+            const depth = document.querySelector('input[name="depth"]:checked').value;
+            
+            // Show loading state
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
             try {
                 const response = await fetch('/research', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ topic, provider, depth })
+                    body: JSON.stringify({ topic, depth }),
                 });
-
-                const data = await response.json();
-                loadingIndicator.classList.add('hidden');
                 
-                if (data.error) {
-                    resultsContainer.innerHTML = `<p class="text-red-400">${data.error}</p>`;
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Hide loading state
+                    document.getElementById('loadingState').classList.add('hidden');
+                    
+                    // Show results
+                    document.getElementById('results').classList.remove('hidden');
+                    
+                    // Update research content with markdown formatting
+                    document.getElementById('researchContent').innerHTML = marked.parse(data.result);
+                    
+                    // Update sources
+                    const sourcesHtml = data.sources.map(source => `
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h4 class="font-medium text-gray-900">${source.title}</h4>
+                            <p class="text-sm text-gray-600 mt-1">${source.snippet}</p>
+                            <a href="${source.url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-block">Read More →</a>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('sources').innerHTML = sourcesHtml;
                 } else {
-                    resultsContainer.innerHTML = `<p class="whitespace-pre-wrap">${data.summary}</p>`;
+                    throw new Error(data.error || 'An error occurred');
                 }
             } catch (error) {
-                loadingIndicator.classList.add('hidden');
-                resultsContainer.innerHTML = `<p class="text-red-400">An error occurred: ${error.message}</p>`;
+                alert('Error: ' + error.message);
+                document.getElementById('loadingState').classList.add('hidden');
             }
         });
     </script>
