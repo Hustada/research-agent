@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Any
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
-from langchain_community.llms import OpenAI
+from services.models import ModelFactory
 from services.research.chains import ResearchChainManager
 from services.search.search_manager import SearchManager
 from services.search.serp_provider import SerpSearchProvider
@@ -21,10 +21,34 @@ load_dotenv()
 
 # Get API keys
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')
 
-if not OPENAI_API_KEY or not SERPAPI_API_KEY:
-    raise ValueError("Missing required API keys. Please set OPENAI_API_KEY and SERPAPI_API_KEY in .env file.")
+if not SERPAPI_API_KEY:
+    raise ValueError("Missing required SERPAPI_API_KEY in .env file.")
+
+# At least one AI provider must be configured
+if not any([OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY]):
+    raise ValueError("At least one AI provider API key must be set (OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY)")
+
+# Map of available models
+AVAILABLE_MODELS = {
+    'provider': [],
+    'api_keys': {}
+}
+
+if OPENAI_API_KEY:
+    AVAILABLE_MODELS['provider'].append('openai')
+    AVAILABLE_MODELS['api_keys']['openai'] = OPENAI_API_KEY
+
+if GEMINI_API_KEY:
+    AVAILABLE_MODELS['provider'].append('gemini')
+    AVAILABLE_MODELS['api_keys']['gemini'] = GEMINI_API_KEY
+
+if ANTHROPIC_API_KEY:
+    AVAILABLE_MODELS['provider'].append('anthropic')
+    AVAILABLE_MODELS['api_keys']['anthropic'] = ANTHROPIC_API_KEY
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -32,7 +56,7 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     """Serve the main dashboard page."""
-    return render_template('index.html')
+    return render_template('index.html', available_models=AVAILABLE_MODELS['provider'])
 
 def sanitize_input(input_text: str, max_length: int = 200) -> str:
     """Sanitize user input by removing potentially dangerous characters and limiting length."""
@@ -94,9 +118,18 @@ def research():
         # Log research attempt
         logger.info(f"Research request: topic={topic}, depth={depth}")
 
+        # Get selected model provider (default to first available)
+        model_provider = data.get('model', AVAILABLE_MODELS['provider'][0])
+        
+        if model_provider not in AVAILABLE_MODELS['provider']:
+            return jsonify({
+                'error': f"Invalid model provider. Choose from: {', '.join(AVAILABLE_MODELS['provider'])}"
+            }), 400
+            
         # Initialize components
-        llm = OpenAI(
-            api_key=OPENAI_API_KEY,
+        llm = ModelFactory.create_model(
+            provider=model_provider,
+            api_key=AVAILABLE_MODELS['api_keys'][model_provider],
             temperature=0.7,
             max_tokens=1500
         )

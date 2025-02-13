@@ -34,6 +34,23 @@
                            placeholder="Enter your research topic...">
                 </div>
                 
+                <!-- Model Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">AI Model</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        {% for provider in available_models %}
+                        <label class="relative flex cursor-pointer">
+                            <input type="radio" name="model" value="{{ provider }}" class="peer sr-only" {% if loop.first %}checked{% endif %}>
+                            <div class="w-full p-4 text-gray-600 bg-white border border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:text-blue-600 peer-checked:bg-blue-50 hover:bg-gray-50">
+                                <div class="text-sm font-semibold">{{ provider|title }}</div>
+                                <div class="text-xs">{{ provider|title }} AI</div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Research Depth -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Research Depth</label>
                     <div class="grid grid-cols-3 gap-4">
@@ -209,6 +226,7 @@
             
             const topic = document.getElementById('topic').value;
             const depth = document.querySelector('input[name="depth"]:checked').value;
+            const model = document.querySelector('input[name="model"]:checked').value;
             
             // Show loading state
             document.getElementById('loadingState').classList.remove('hidden');
@@ -220,7 +238,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ topic, depth }),
+                    body: JSON.stringify({ topic, depth, model }),
                 });
                 
                 const data = await response.json();

@@ -41,8 +41,11 @@ A sleek, minimalist web application that uses AI to generate research summaries 
 ## Prerequisites
 
 - Python 3.8+
-- OpenAI API Key
-- SerpAPI Key
+- SerpAPI Key (Required)
+- At least one of the following API keys:
+  - OpenAI API Key
+  - Google Gemini API Key
+  - Anthropic API Key
 
 ## Installation
 
@@ -63,8 +66,13 @@ A sleek, minimalist web application that uses AI to generate research summaries 
 1. Create a `.env` file in the project root
 2. Add your API keys:
    ```
-   OPENAI_API_KEY='your_openai_key'
+   # Required
    SERPAPI_API_KEY='your_serpapi_key'
+   
+   # At least one of these is required
+   OPENAI_API_KEY='your_openai_key'
+   GEMINI_API_KEY='your_gemini_key'
+   ANTHROPIC_API_KEY='your_anthropic_key'
    ```
 
 ⚠️ **Important Security Notes**:
